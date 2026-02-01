@@ -45,7 +45,7 @@ exp.diag_table = diag
 namelist = Namelist({
     'main_nml': {
         'dt_atmos': 600,
-        'days': 200,
+        'days': 100,
         'calendar': 'thirty_day',
         'current_date': [2000,1,1,0,0,0]
     },
@@ -106,5 +106,5 @@ if __name__ == '__main__':
     cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
     exp.run(1, num_cores=NCORES, use_restart=False, overwrite_data=True)
-    for i in range(2, 50):  
+    for i in range(2, 12):  
         exp.run(i, num_cores=NCORES, overwrite_data=True)  # use the restart i-1 by default

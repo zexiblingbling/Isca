@@ -40,6 +40,13 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
+# Additionally I want to compute the moist static energy budget terms;
+    # Recall: MSE = cp*T + g*z + Lv*q
+diag.add_field('dynamics', 'height', time_avg=True) # geopotential height at full model levels; Unit: m
+diag.add_field('dynamics', 'zsurf', time_avg=True) # geopotential height at the surface; Unit: m
+diag.add_field('mixed_layer', 'flux_t', time_avg=True) # sensible heat flux at the surface (up); Unit: W/m^2
+diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) # latent heat flux at the surface (up); Unit: W/m^2
+
 exp.diag_table = diag
 
 #Empty the run directory ready to run

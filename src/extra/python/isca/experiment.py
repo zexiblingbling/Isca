@@ -222,6 +222,7 @@ class Experiment(Logger, EventEmitter):
 
         # make the output run folder and copy over the input files
         mkdir([indir, resdir, self.restartdir])
+        
         # ensure restart directory is clean (avoid stale artifacts causing MPP_IO errors)
         for entry in glob.glob(P(resdir, '*')):
             self.log.warning('Removing stale restart artifact %r' % entry)
