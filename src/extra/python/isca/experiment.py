@@ -222,6 +222,10 @@ class Experiment(Logger, EventEmitter):
 
         # make the output run folder and copy over the input files
         mkdir([indir, resdir, self.restartdir])
+        # ensure restart directory is clean (avoid stale artifacts causing MPP_IO errors)
+        for entry in glob.glob(P(resdir, '*')):
+            self.log.warning('Removing stale restart artifact %r' % entry)
+            sh.rm('-r', entry)
 
         self.codebase.write_source_control_status(P(self.rundir, 'git_hash_used.txt'))
         self.write_namelist(self.rundir)
