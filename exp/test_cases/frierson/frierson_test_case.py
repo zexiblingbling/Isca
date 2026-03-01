@@ -33,6 +33,8 @@ diag.add_field('dynamics', 'bk')
 diag.add_field('dynamics', 'pk')
 diag.add_field('atmosphere', 'precipitation', time_avg=True)
 diag.add_field('mixed_layer', 't_surf', time_avg=True)
+diag.add_field('mixed_layer', 'flux_oceanq', time_avg=True) # W/m^2 - ocean to atmosphere latent heat flux (up)
+
 diag.add_field('dynamics', 'sphum', time_avg=True)
 diag.add_field('dynamics', 'ucomp', time_avg=True)
 diag.add_field('dynamics', 'vcomp', time_avg=True)
@@ -40,12 +42,24 @@ diag.add_field('dynamics', 'temp', time_avg=True)
 diag.add_field('dynamics', 'vor', time_avg=True)
 diag.add_field('dynamics', 'div', time_avg=True)
 
-# Additionally I want to compute the moist static energy budget terms;
+# For Fig 5.2 The Meridional Cross Sections of MSE and Its Components in TAGC
     # Recall: MSE = cp*T + g*z + Lv*q
 diag.add_field('dynamics', 'height', time_avg=True) # geopotential height at full model levels; Unit: m
 diag.add_field('dynamics', 'zsurf', time_avg=True) # geopotential height at the surface; Unit: m
 diag.add_field('mixed_layer', 'flux_t', time_avg=True) # sensible heat flux at the surface (up); Unit: W/m^2
 diag.add_field('mixed_layer', 'flux_lhe', time_avg=True) # latent heat flux at the surface (up); Unit: W/m^2
+
+# For Fig.5.6 The Zonal Mean Atmospheric Energy Budget in TAGC
+diag.add_field('two_stream', 'swdn_toa', time_avg=True)   # SW down at TOA
+diag.add_field('two_stream', 'olr', time_avg=True)        # LW up at TOA
+diag.add_field('two_stream', 'swdn_sfc', time_avg=True)   # absorbed SW at surface
+diag.add_field('two_stream', 'net_lw_surf', time_avg=True)  # net upward LW at surface
+
+# For calculating the poleward MSE transport according to TAGC Equation 5.14
+diag.add_field('dynamics', 'vcomp_temp', time_avg=True) # meridional wind * temperature; Unit: m*K/sec
+diag.add_field('dynamics', 'sphum_v', time_avg=True) # meridional wind * specific humidity; Unit: m*K/sec
+diag.add_field('dynamics', 'vcomp_height', time_avg=True) # meridional wind * geopotential height; Unit: m^2/sec
+
 
 exp.diag_table = diag
 
@@ -106,7 +120,9 @@ exp.namelist = namelist = Namelist({
         'prescribe_initial_dist':True,
         'evaporation':True,   
         'depth': 2.5,                          #Depth of mixed layer used
-        'albedo_value': 0.31,                  #Albedo value used             
+        'albedo_value': 0.31,                  #Albedo value used   
+        'do_qflux': True,       
+        'qflux_amp': 0.3   
     },
 
     'qe_moist_convection_nml': {
@@ -180,6 +196,6 @@ exp.namelist = namelist = Namelist({
 if __name__=="__main__":
     cb.compile()  # compile the source code to working directory $GFDL_WORK/codebase
 
-    exp.run(1, use_restart=False, num_cores=NCORES)
+    exp.run(1, use_restart=False, num_cores=NCORES, overwrite_data=True)
     for i in range(2,121):
-        exp.run(i, num_cores=NCORES)
+        exp.run(i, num_cores=NCORES, overwrite_data=True)
