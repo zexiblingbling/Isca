@@ -1,8 +1,8 @@
 """
 This wrapper script automates the execution of the Frierson test case 
 across multiple ocean heat transport amplitudes (qflux_amp). For each 
-amplitude, it dynamically updates the model namelist, runs the 20-month 
-Isca simulation, and safely archives the final month's output (run0020) 
+amplitude, it dynamically updates the model namelist, runs the Isca simulation, 
+and safely archives all monthly output starting from run 25 onwards 
 to a distinct directory before the next iteration overwrites the data.
 """
 
@@ -15,7 +15,7 @@ import subprocess
 amplitudes = [0, 0.3, 0.7, 1.1, 1.5, 1.9, 2.3, 2.7]
 original_script = "frierson_test_case.py"
 temp_script = "temp_runner.py"
-target_base_dir = "/home/links/zs449/Test_Frierson/Results_From_Different_qfluxamp"
+target_base_dir = "/home/links/zs449/Test_Frierson/Results_From_Different_qfluxamp/ALL"
 
 def main():
     # 1. Locate the Isca data directory from the environment
@@ -26,8 +26,8 @@ def main():
             "Isca Environment has to be activated to run this script."
         )
 
-    # The 20th run will always be placed here by your original script
-    source_run20_dir = os.path.join(gfdl_data, "frierson_test_experiment", "run0020")
+    # The master directory where Isca dumps the output for this experiment
+    source_experiment_dir = os.path.join(gfdl_data, "frierson_test_experiment")
 
     # Ensure the master target directory exists
     os.makedirs(target_base_dir, exist_ok=True)
@@ -43,7 +43,6 @@ def main():
         print(f"{'='*50}")
         
         # Use regex to find the qflux_amp line and replace the number
-        # This matches "'qflux_amp':" followed by any spacing and numbers/decimals
         new_content = re.sub(
             r"('qflux_amp'\s*:\s*)[0-9.]+", 
             rf"\g<1>{amp}", 
@@ -55,29 +54,47 @@ def main():
             file.write(new_content)
             
         # 4. Execute the temporary script
-        # subprocess.run blocks the loop until all 20 months finish running
+        # subprocess.run blocks the loop until all months finish running
         subprocess.run(["python", temp_script], check=True)
         
-        # 5. Define destination and copy the 20th run
-        dest_folder_name = f"Run20_amp{amp}"
+        # 5. Define destination directory for this amplitude
+        dest_folder_name = f"Runs25_onwards_amp{amp}"
         dest_dir = os.path.join(target_base_dir, dest_folder_name)
         
-        # If the destination already exists (from a past run), remove it to prevent copy errors
+        # Clean destination if it exists from a previous aborted run
         if os.path.exists(dest_dir):
             shutil.rmtree(dest_dir)
+        os.makedirs(dest_dir, exist_ok=True)
             
-        print(f"\n---> Extraction: Copying month 20 data to {dest_dir}")
-        shutil.copytree(source_run20_dir, dest_dir)
+        print(f"\n---> Extraction: Scanning for data from run 25 onwards...")
         
+        # Iterate through the Isca output directory
+        found_data = False
+        if os.path.exists(source_experiment_dir):
+            for item in os.listdir(source_experiment_dir):
+                # Look for directories named "run" followed by numbers
+                if item.startswith("run") and item[3:].isdigit():
+                    run_num = int(item[3:])
+                    
+                    # If the run number is 25 or greater, copy it
+                    if run_num >= 25:
+                        found_data = True
+                        src_path = os.path.join(source_experiment_dir, item)
+                        dst_path = os.path.join(dest_dir, item)
+                        print(f"     Copying {item}...")
+                        shutil.copytree(src_path, dst_path)
+        
+        if not found_data:
+            print("     WARNING: No runs >= 25 were found to copy!")
+            
     # 6. Clean up the temporary execution script
     if os.path.exists(temp_script):
         os.remove(temp_script)
         
-    print("\nAll simulations are complete! Your data is archived in:")
+    print("\nAll simulations are complete! Data is archived in:")
     print(target_base_dir)
 
     # 7. Clean up the leftover Isca data directory
-    source_experiment_dir = os.path.join(gfdl_data, "frierson_test_experiment")
     if os.path.exists(source_experiment_dir):
         print(f"\n---> Cleanup: Removing residual data in {source_experiment_dir}")
         shutil.rmtree(source_experiment_dir)

@@ -25,7 +25,8 @@ exp = Experiment('frierson_test_experiment', codebase=cb)
 
 #Tell model how to write diagnostics
 diag = DiagTable()
-diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+# diag.add_file('atmos_monthly', 30, 'days', time_units='days')
+diag.add_file('atmos_daily', 1, 'days', time_units='days')
 
 #Tell model which diagnostics to write
 diag.add_field('dynamics', 'ps', time_avg=True)
@@ -54,6 +55,7 @@ diag.add_field('two_stream', 'swdn_toa', time_avg=True)   # SW down at TOA
 diag.add_field('two_stream', 'olr', time_avg=True)        # LW up at TOA
 diag.add_field('two_stream', 'swdn_sfc', time_avg=True)   # absorbed SW at surface
 diag.add_field('two_stream', 'net_lw_surf', time_avg=True)  # net upward LW at surface
+diag.add_field('two_stream', 'flux_sw', time_avg=True)  # net upward SW (Outgoing minus Incoming) (therefore will be a negative number at TOA) 
 
 # For calculating the poleward MSE transport according to TAGC Equation 5.14
 diag.add_field('dynamics', 'vcomp_temp', time_avg=True) # meridional wind * temperature; Unit: m*K/sec

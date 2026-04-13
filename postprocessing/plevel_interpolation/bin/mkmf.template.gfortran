@@ -1,0 +1,21 @@
+# Template for GNU Fortran (gfortran)
+FC = gfortran
+CC = gcc
+LD = gfortran
+
+# Exact paths to your Conda environment's NetCDF libraries
+INC = -I/home/links/zs449/.conda/envs/isca_env/include
+LIB = -L/home/links/zs449/.conda/envs/isca_env/lib
+
+FFLAGS = -fcray-pointer -fdefault-real-8 -fdefault-double-8 -O2 -ffree-line-length-none -fallow-argument-mismatch -fallow-invalid-boz $(INC)
+CFLAGS = -O2 $(INC)
+LDFLAGS = -lnetcdff -lnetcdf $(LIB)
+
+# Make rules
+.SUFFIXES: .F90 .f .o .c
+.F90.o:
+	$(FC) $(FFLAGS) -c $*.F90
+.f.o:
+	$(FC) $(FFLAGS) -c $*.f
+.c.o:
+	$(CC) $(CFLAGS) -c $*.c

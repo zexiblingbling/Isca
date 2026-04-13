@@ -108,6 +108,9 @@ integer :: id_ps, id_u, id_v, id_t, id_vor, id_div, id_omega, id_wspd, id_slp
 integer :: id_pres_full, id_pres_half, id_zfull, id_zhalf, id_vort_norm, id_EKE
 integer :: id_uu, id_vv, id_tt, id_omega_omega, id_uv, id_omega_t, id_vw, id_uw, id_ut, id_vt, id_v_vor, id_uz, id_vz, id_omega_z
 integer, allocatable, dimension(:) :: id_tr, id_utr, id_vtr, id_wtr !extra advection diags added by RG
+integer :: id_p_v_t, id_p_v_z, id_p_v_q !triple covariances at full pressure levels
+integer :: id_dp_v_t, id_dp_v_z, id_dp_v_q ! Triple Covariances for Mass-Weighted Heat Transport with pressure thickness
+
 real :: gamma, expf, expf_inverse
 character(len=8) :: mod_name = 'dynamics'
 integer, dimension(4) :: axis_id
@@ -1682,6 +1685,24 @@ id_zhalf   = register_diag_field(mod_name, &
 id_slp = register_diag_field(mod_name, &
       'slp',(/id_lon,id_lat/),       Time, 'sea level pressure',           'pascals')
 
+id_p_v_t = register_diag_field(mod_name, &
+      'pres_vcomp_temp', axes_3d_full, Time, 'pressure * merid wind * temperature', 'Pa*m*K/sec')
+
+id_p_v_z = register_diag_field(mod_name, &
+      'pres_vcomp_height', axes_3d_full, Time, 'pressure * merid wind * height', 'Pa*m**2/sec')
+
+id_p_v_q = register_diag_field(mod_name, &
+      'pres_vcomp_sphum', axes_3d_full, Time, 'pressure * merid wind * specific humidity', 'Pa*m/sec')
+
+id_dp_v_t = register_diag_field(mod_name, &
+      'dp_vcomp_temp', axes_3d_full, Time, 'layer thickness * merid wind * temperature', 'Pa*m*K/sec')
+
+id_dp_v_z = register_diag_field(mod_name, &
+      'dp_vcomp_height', axes_3d_full, Time, 'layer thickness * merid wind * height', 'Pa*m**2/sec')
+
+id_dp_v_q = register_diag_field(mod_name, &
+      'dp_vcomp_sphum', axes_3d_full, Time, 'layer thickness * merid wind * specific humidity', 'Pa*m/sec')
+
 if(id_slp > 0) then
   gamma = 0.006
   expf = rdgas*gamma/grav
@@ -1861,6 +1882,46 @@ if(id_EKE > 0) then
   call uv_grid_from_vor_div(vor_spec, div_spec, worka3d, workb3d)
   EKE = mass_weighted_global_integral(.5*(worka3d**2 + workb3d**2), p_surf)
   used = send_data(id_EKE, EKE, Time)
+endif
+
+! Triple Covariances for Heat Transport using FULL-Level Pressure
+if(id_p_v_t > 0) then
+  worka3d = p_full * v_grid * t_grid
+  used = send_data(id_p_v_t, worka3d, Time)
+endif
+
+if(id_p_v_z > 0) then
+  worka3d = p_full * v_grid * z_full
+  used = send_data(id_p_v_z, worka3d, Time)
+endif
+
+if(id_p_v_q > 0) then
+  ! nhum is the index for the specific humidity tracer
+  worka3d = p_full * v_grid * tr_grid(:,:,:,time_level,nhum)
+  used = send_data(id_p_v_q, worka3d, Time)
+endif
+
+! Calculate layer thickness (dp) using the half-level interfaces
+if (id_dp_v_t > 0 .or. id_dp_v_z > 0 .or. id_dp_v_q > 0) then
+  do k = 1, num_levels
+    workb3d(:,:,k) = p_half(:,:,k+1) - p_half(:,:,k)
+  enddo
+endif
+
+! Mass-weighted Triple Covariances for Heat Transport
+if(id_dp_v_t > 0) then
+  worka3d = workb3d * v_grid * t_grid
+  used = send_data(id_dp_v_t, worka3d, Time)
+endif
+
+if(id_dp_v_z > 0) then
+  worka3d = workb3d * v_grid * z_full
+  used = send_data(id_dp_v_z, worka3d, Time)
+endif
+
+if(id_dp_v_q > 0) then
+  worka3d = workb3d * v_grid * tr_grid(:,:,:,time_level,nhum)
+  used = send_data(id_dp_v_q, worka3d, Time)
 endif
 
 return
