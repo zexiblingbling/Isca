@@ -23,8 +23,8 @@ except ImportError:
     sys.exit(1)
 
 # --- Configuration ---
-amplitudes = [0, 0.8, 1.6, 2.5] # should match with run_different_qfluxamps.py
-run_start = 25
+amplitudes = [2.5, 1.6, 0.8, 0.3, 0.0] # should match with frierson
+run_start = 25  
 run_end = 120
 
 # Point input directly to the raw Isca data directory
@@ -47,7 +47,8 @@ def main():
     with tqdm(total=total_files, desc="Overall Progress", unit="file", colour="green") as pbar:
         
         for amp in amplitudes:
-            current_base_dir = f"{input_root}/Runs25_onwards_amp{amp}"
+            # UPDATED: Matches the /frierson_amp_X.X/ format
+            current_base_dir = f"{input_root}/frierson_amp_{amp}"
             current_out_dir = f"{output_root}/amp{amp}"
             
             if not os.path.isdir(current_base_dir):

@@ -1,8 +1,8 @@
 import os
-
 import numpy as np
-
 from isca import IscaCodeBase, DiagTable, Experiment, Namelist, GFDL_BASE
+import sys 
+
 
 NCORES = 8
 base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -19,9 +19,16 @@ cb = IscaCodeBase.from_directory(GFDL_BASE)
 # is used to load the correct compilers.  The env file is always loaded from
 # $GFDL_BASE and not the checked out git repo.
 
+# Read the amplitude directly from the OS environment. 
+# If running script manually, it safely defaults to 1.8.
+qflux_amplitude = float(os.environ.get("ISCA_QFLUX_AMP", 1.8))
+
+
 # create an Experiment object to handle the configuration of model parameters
 # and output diagnostics
-exp = Experiment('frierson_test_experiment', codebase=cb)
+# Automatically create separate folders for each amplitude!
+exp_name = f'frierson_amp_{qflux_amplitude}'
+exp = Experiment(f'frierson_amp_{qflux_amplitude}', codebase=cb)
 
 #Tell model how to write diagnostics
 diag = DiagTable()
@@ -62,6 +69,14 @@ diag.add_field('dynamics', 'vcomp_temp', time_avg=True) # meridional wind * temp
 diag.add_field('dynamics', 'sphum_v', time_avg=True) # meridional wind * specific humidity; Unit: m*K/sec
 diag.add_field('dynamics', 'vcomp_height', time_avg=True) # meridional wind * geopotential height; Unit: m^2/sec
 
+# For calculating the poleward MSE transport according to TAGC Equation 5.14, but using triple covariances at Full Pressure Levels
+diag.add_field('dynamics', 'pres_vcomp_temp', time_avg=True) # Unit: Pa*m*K/sec
+diag.add_field('dynamics', 'pres_sphum_v', time_avg=True) # Unit: Pa*m*K/sec
+diag.add_field('dynamics', 'pres_vcomp_height', time_avg=True) # Unit: Pa*m^2/sec
+
+diag.add_field('dynamics', 'dp_vcomp_temp', time_avg=True) # Unit: Pa*m*K/sec
+diag.add_field('dynamics', 'dp_vcomp_height', time_avg=True) # Unit: Pa*m*K/sec
+diag.add_field('dynamics', 'dp_vcomp_sphum', time_avg=True) # Unit: Pa*m*K/sec
 
 exp.diag_table = diag
 
@@ -124,7 +139,7 @@ exp.namelist = namelist = Namelist({
         'depth': 2.5,                          #Depth of mixed layer used
         'albedo_value': 0.31,                  #Albedo value used   
         'do_qflux': True,       
-        'qflux_amp': 0.3   
+        'qflux_amp': qflux_amplitude   
     },
 
     'qe_moist_convection_nml': {

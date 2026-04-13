@@ -82,7 +82,7 @@ public :: mixed_layer_init, mixed_layer, mixed_layer_end, albedo_calc
 !=================================================================================================================================
 
 logical :: evaporation = .true.
-real    :: qflux_amp = 0.0
+real    :: qflux_amp = 0.8
 real    :: qflux_width = 16.0  ! width of qflux region in degrees
 logical :: load_qflux = .false.
 logical :: time_varying_qflux = .false.
